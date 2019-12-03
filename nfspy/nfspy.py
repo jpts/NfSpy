@@ -268,12 +268,13 @@ class NfSpy(object):
                 fattr = self.rootattr
             else:
                 fh, fattr, cachetime = self.handles[path]
+            # get fattr if it is missing
+            if fattr == None:
+                fattr = self.ncl.Getattr(fh)
+                self.handles[path] = (fh, fattr, cachetime)
             # check that it isn't stale
             self.ncl.fuid = fattr[3]
             self.ncl.fgid = fattr[4]
-            #Commented to save a call. May cause problems?
-            #fattr = self.ncl.Getattr(dh)
-            #self.handles[path][1] = fattr
         except (KeyError,NFSError) as e:
             if isinstance(e, KeyError) or e.errno() == NFSError.NFS3ERR_STALE:
                 if isinstance(e, NFSError):
