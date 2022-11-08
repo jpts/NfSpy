@@ -10,8 +10,8 @@
 # protocol, use multiple inheritance as shown below.
 
 
-import rpc
-from rpc import Packer, Unpacker, TCPClient, UDPClient, UDPPortMapperClient
+from . import rpc
+from .rpc import Packer, Unpacker, TCPClient, UDPClient, UDPPortMapperClient
 
 
 # Program number and version for the mount protocol
@@ -87,7 +87,7 @@ class Mount3Unpacker(MountUnpacker):
             #Not sure how to use this:
             num_flavors = self.unpack_uint()
             auth_flavors = []
-            for n in xrange(num_flavors):
+            for n in range(num_flavors):
                 auth_flavors.append(self.unpack_uint())
         else:
             fh = None
@@ -219,15 +219,15 @@ def test():
         C = UDPMountClient
     if sys.argv[1:]: host = sys.argv[1]
     else: host = ''
-    print "exports on %s" % host
+    print("exports on %s" % host)
     mcl = C(host)
     list = mcl.Export()
     for item in list:
-        print item
+        print(item)
         try:
             mcl.Mnt(item[0])
         except:
-            print 'Sorry'
+            print('Sorry')
             continue
         mcl.Umnt(item[0])
 

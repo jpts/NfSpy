@@ -3,16 +3,16 @@
 # NFS v3 implementation with auth-spoofing
 # by Daniel Miller
 
-import rpc
+from . import rpc
 from errno import *
 import socket
 from time import time
-from nfsclient import *
-from mountclient import PartialMountClient, MOUNTPROG
+from .nfsclient import *
+from .mountclient import PartialMountClient, MOUNTPROG
 import os
 import stat
 from threading import Lock
-from lrucache import LRU
+from .lrucache import LRU
 
 class FallbackUDPClient(rpc.RawUDPClient):
     def __init__(self, host, prog, vers, port=None):
@@ -21,7 +21,7 @@ class FallbackUDPClient(rpc.RawUDPClient):
             port = pmap.Getport((prog, vers, rpc.IPPROTO_UDP, 0))
             pmap.close()
             if port == 0:
-                raise RuntimeError, 'program not registered'
+                raise RuntimeError('program not registered')
         rpc.RawUDPClient.__init__(self, host, prog, vers, port)
 
 class FallbackTCPClient(rpc.RawTCPClient):
@@ -31,7 +31,7 @@ class FallbackTCPClient(rpc.RawTCPClient):
             port = pmap.Getport((prog, vers, rpc.IPPROTO_TCP, 0))
             pmap.close()
             if port == 0:
-                raise RuntimeError, 'program not registered'
+                raise RuntimeError('program not registered')
         rpc.RawTCPClient.__init__(self, host, prog, vers, port)
 
 class FallbackTCPMountClient(PartialMountClient, FallbackTCPClient):
@@ -194,7 +194,7 @@ class NfSpy(object):
         if self.server:
             self.host, self.path = self.server.split(':',1);
         else:
-            raise RuntimeError, "No server specified"
+            raise RuntimeError("No server specified")
 
         if self.dirhandle:
             self.mcl = FakeUmnt()
@@ -209,10 +209,10 @@ class NfSpy(object):
                 elif proto == "tcp":
                     self.mcl = FallbackTCPMountClient(self.host, port)
                 else:
-                    raise RuntimeError, "Invalid mount transport: %s" % proto
+                    raise RuntimeError("Invalid mount transport: %s" % proto)
             except socket.error as e:
-                raise RuntimeError, "Problem mounting to %s:%s/%s: %s\n" % (
-                        self.host, repr(port), proto, os.strerror(e.errno))
+                raise RuntimeError("Problem mounting to %s:%s/%s: %s\n" % (
+                        self.host, repr(port), proto, os.strerror(e.errno)))
 
             status, dirhandle, auth_flavors = self.mcl.Mnt(self.path)
             if status != 0:
@@ -230,10 +230,10 @@ class NfSpy(object):
             elif proto == "tcp":
                 self.ncl = EvilFallbackTCPNFSClient(self.host, port,fakename=self.fakename)
             else:
-                raise RuntimeError, "Invalid NFS transport: %s" % proto
+                raise RuntimeError("Invalid NFS transport: %s" % proto)
         except socket.error as e:
-            raise RuntimeError, "Problem establishing NFS to %s:%s/%s: %s\n" % (
-                    self.host, repr(port), proto, os.strerror(e.errno))
+            raise RuntimeError("Problem establishing NFS to %s:%s/%s: %s\n" % (
+                    self.host, repr(port), proto, os.strerror(e.errno)))
 
         self.ncl.fuid = self.ncl.fgid = 0
 
@@ -690,20 +690,20 @@ class NfSpy(object):
         if uid != 0 and gid != 0:
             return 0
         elif gid != 0:
-            if mode & os.R_OK and rmode & 044:
+            if mode & os.R_OK and rmode & 0o44:
                 return 0
-            elif mode & os.W_OK and rmode & 022:
+            elif mode & os.W_OK and rmode & 0o22:
                 return 0
-            elif mode & os.X_OK and rmode & 011:
+            elif mode & os.X_OK and rmode & 0o11:
                 return 0
             else:
                 raise IOError(EACCES, os.strerror(EACCES), path)
         elif uid != 0:
-            if mode & os.R_OK and rmode & 0404:
+            if mode & os.R_OK and rmode & 0o404:
                 return 0
-            elif mode & os.W_OK and rmode & 0202:
+            elif mode & os.W_OK and rmode & 0o202:
                 return 0
-            elif mode & os.X_OK and rmode & 0101:
+            elif mode & os.X_OK and rmode & 0o101:
                 return 0
             else:
                 raise IOError(EACCES, os.strerror(EACCES), path)

@@ -42,17 +42,17 @@ class LRU:
                 return
             a = self.first
             a.next.prev = None
-            self.first = a.next
+            self.first = a.__next__
             a.next = None
             del self.d[a.me[0]]
             del a
     def __delitem__(self, obj):
         nobj = self.d[obj]
         if nobj.prev:
-            nobj.prev.next = nobj.next
+            nobj.prev.next = nobj.__next__
         else:
-            self.first = nobj.next
-        if nobj.next:
+            self.first = nobj.__next__
+        if nobj.__next__:
             nobj.next.prev = nobj.prev
         else:
             self.last = nobj.prev
@@ -60,34 +60,34 @@ class LRU:
     def __iter__(self):
         cur = self.first
         while cur != None:
-            cur2 = cur.next
+            cur2 = cur.__next__
             yield cur.me[1]
             cur = cur2
     def iteritems(self):
         cur = self.first
         while cur != None:
-            cur2 = cur.next
+            cur2 = cur.__next__
             yield cur.me
             cur = cur2
     def iterkeys(self):
         return iter(self.d)
     def itervalues(self):
-        for i,j in self.iteritems():
+        for i,j in self.items():
             yield j
     def keys(self):
-        return self.d.keys()
+        return list(self.d.keys())
     def prune(self,func):
         '''prune from left until func(self[x]) returns false'''
         count = 0
         cur = self.first
         while cur and func(cur.me[1]):
             count = count + 1
-            cur2 = cur.next
+            cur2 = cur.__next__
             if cur2 is not None:
                 cur2.prev = None
             del self.d[cur.me[0]]
             cur = cur2
         self.first = cur
-        if cur is None or cur.next is None:
+        if cur is None or cur.__next__ is None:
             self.last = cur
         return count

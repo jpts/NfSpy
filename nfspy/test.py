@@ -1,5 +1,5 @@
 import unittest
-import nfspy
+from . import nfspy
 
 class NfSpyTestCase(unittest.TestCase):
     class NfSpyNonFuse(nfspy.NFSFuse):

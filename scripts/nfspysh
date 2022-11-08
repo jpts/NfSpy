@@ -21,7 +21,7 @@ def uncode(string):
     pos = 0
     for m in reUnicode.finditer(string):
         ret += string[pos:m.start()]
-        ret += unichr(int(m.group('codepoint')))
+        ret += chr(int(m.group('codepoint')))
         pos = m.end()
     ret += string[pos:]
     return ret
@@ -50,7 +50,7 @@ class Commands(object):
             except (OSError,IOError,NFSError) as e:
                 report(e)
         else:
-            print "Unknown command: {0}".format(args[0])
+            print("Unknown command: {0}".format(args[0]))
 
     def help(self, cmd=None):
         """help [<cmd>]
@@ -59,14 +59,14 @@ class Commands(object):
         if cmd:
             if hasattr(self, cmd) and not cmd.startswith("_"):
                 func = getattr(self, cmd)
-                print func.__doc__ or "No help for {0}".format(cmd)
+                print(func.__doc__ or "No help for {0}".format(cmd))
             else:
-                print "Unknown command: {0}".format(cmd)
+                print("Unknown command: {0}".format(cmd))
         else:
-            print "Known commands:"
+            print("Known commands:")
             for c, _ in inspect.getmembers(self, inspect.ismethod):
                 if not c.startswith("_"):
-                    print "    {0}".format(c)
+                    print("    {0}".format(c))
 
     def cd(self, directory):
         """cd <dir>
@@ -85,13 +85,13 @@ class Commands(object):
         """pwd
 
         Print the current remote working directory."""
-        print self.shell.rcwd
+        print(self.shell.rcwd)
 
     def lpwd(self):
         """lpwd
 
         Print the current local working directory."""
-        print os.getcwd()
+        print(os.getcwd())
 
     def ls(self, *args):
         """ls [-r] [<filename> ...]
@@ -114,7 +114,7 @@ class Commands(object):
             try:
                 if self.shell.isdir(f):
                     dirname = f
-                    print "{0}:".format(dirname)
+                    print("{0}:".format(dirname))
                     lines = self.shell.spy.readdir(f,0)
                 else:
                     dirname = path.dirname(f)
@@ -133,14 +133,14 @@ class Commands(object):
                         except IOError as e:
                             report(e)
                         name = "{0} -> {1}".format(name, dest)
-                    print "{mode:06o} {uid: >6} {gid: >6} {size: >11} {date!s} {name}".format(
+                    print("{mode:06o} {uid: >6} {gid: >6} {size: >11} {date!s} {name}".format(
                             mode=attr.st_mode,
                             uid=attr.st_uid,
                             gid=attr.st_gid,
                             size=attr.st_size,
                             date=datetime.fromtimestamp(attr.st_mtime),
                             name=name
-                            )
+                            ))
             except IOError as e:
                 report(e)
                 continue
@@ -178,13 +178,13 @@ class Commands(object):
         f = self.shell.canonicalize(remotename)
         bsize = self.shell.spy.wtsize
         try:
-            self.shell.spy.mknod(f, 0100666 & ~self.shell.umask, 0)
+            self.shell.spy.mknod(f, 0o100666 & ~self.shell.umask, 0)
         except IOError as e:
             if e.errno == errno.EEXIST:
                 if self.shell.isdir(f):
                     f = path.normpath(path.join(f, os.path.basename(filename)))
                     try:
-                        self.shell.spy.mknod(f, 0100666 & ~self.shell.umask, 0)
+                        self.shell.spy.mknod(f, 0o100666 & ~self.shell.umask, 0)
                     except IOError as e:
                         if e.errno == errno.EEXIST:
                             self.shell.spy.truncate(f, 0)
@@ -203,8 +203,8 @@ class Commands(object):
 
         Change <filename>'s mode. <mode> must be 3 or 4 octal digits."""
         mode = int(mode, 8)
-        if mode > 07777:
-            print "Invalid mode."
+        if mode > 0o7777:
+            print("Invalid mode.")
             return
         f = self.shell.canonicalize(filename)
         self.shell.spy.chmod(f, mode)
@@ -230,7 +230,7 @@ class Commands(object):
 
         Create a directory at <dirname>."""
         n = self.shell.canonicalize(dirname)
-        self.shell.spy.mkdir(n, 0777 & ~self.shell.umask )
+        self.shell.spy.mkdir(n, 0o777 & ~self.shell.umask )
 
     def rmdir(self, dirname):
         """rmdir <dirname>
@@ -268,7 +268,7 @@ class Commands(object):
         if mask:
             self.shell.umask = int(mask,8)
         else:
-            print "{0:03o}".format(self.shell.umask)
+            print("{0:03o}".format(self.shell.umask))
 
     def df(self):
         """df
@@ -282,7 +282,7 @@ class Commands(object):
         vf = (fsstat.f_files, fsstat.f_files-fsstat.f_ffree, fsstat.f_favail, int(round(100 - 100.0*fsstat.f_ffree/fsstat.f_files)))
         w = tuple( max( len(str(row[i])) for row in (hb,vb,hf,vf) ) for i in range(4) )
         for row in (hb,vb,sep,hf,vf):
-            print " ".join("{0:>{1}}".format(*x) for x in zip(row,w)) +"%"
+            print(" ".join("{0:>{1}}".format(*x) for x in zip(row,w)) +"%")
 
     def exit(self):
         """exit
@@ -296,7 +296,7 @@ class Shell(object):
         self.spy.fsinit()
         self.runner = Commands(self)
         self.rcwd = "/"
-        self.umask = 022
+        self.umask = 0o22
 
     def canonicalize(self,pathname):
         ret = None
@@ -334,9 +334,9 @@ class Shell(object):
                         line2 += '{{%d}}'%(ord(c))
                 line = line2.encode('ascii')
             except TypeError:
-                print "Can't handle that code point"
+                print("Can't handle that code point")
                 return
-        arr = map(uncode, shlex.split(line, posix=False))
+        arr = list(map(uncode, shlex.split(line, posix=False)))
         self.runner(*arr)
 
     def run(self):
@@ -351,14 +351,14 @@ class Shell(object):
                 logging.exception(e)
             sys.stdout.write(self.prompt())
             line = sys.stdin.readline().decode(sys.stdin.encoding)
-        print "Quitting."
+        print("Quitting.")
 
     def close(self):
         self.spy.fsdestroy()
 
 if __name__ == '__main__':
     def help_options(option, opt_str, value, parser):
-        print "Options that may be specified to -o"
+        print("Options that may be specified to -o")
         for opt in NfSpy.options:
             fmt = "  {example: <26}{help}"
             example = opt['mountopt']
@@ -366,7 +366,7 @@ if __name__ == '__main__':
                 example = "{mountopt}={metavar}".format(**opt)
             if 'default' in opt:
                 fmt += " (default {default})"
-            print fmt.format(example=example,**opt)
+            print(fmt.format(example=example,**opt))
         sys.exit(0)
 
     parser = OptionParser()
